@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/home/ahector/SOFTWARE/RDNN-HTR-PY/bin/python3
 from __future__ import absolute_import
 
 import argparse
@@ -55,6 +55,22 @@ if __name__ == "__main__":
         help="Print output with the associated image id",
     )
     add_argument(
+        "--print_char_segm",
+        type=str2bool,
+        nargs="?",
+        const=True,
+        default=False,
+        help="Print output with the corresponding character segmentation",
+    )
+    add_argument(
+        "--print_word_segm",
+        type=str2bool,
+        nargs="?",
+        const=True,
+        default=False,
+        help="Print output with the corresponding word segmentation",
+    )
+    add_argument(
         "--separator",
         type=str,
         default=" ",
@@ -65,9 +81,17 @@ if __name__ == "__main__":
         "--use_letters", action="store_true", help="Print the output with letters"
     )
     add_argument(
-        "--space", type=str, help="Replace <space> with this. Used with --use_letters"
+        "--space",
+        type=str, 
+        default="",
+        help="Replace a given symbol with ' '. Used with --use_letters"
     )
     args = args()
+
+    '''
+    "--print_word_segm" option requires also that "--print_char_segm" option be set
+    '''
+    if args.print_word_segm: args.print_char_segm=True
 
     syms = SymbolsTable(args.syms)
     device = torch.device("cuda:{}".format(args.gpu - 1) if args.gpu else "cpu")
@@ -99,14 +123,39 @@ if __name__ == "__main__":
     for batch in dataset_loader:
         batch_input = batch_input_fn(batch)
         batch_output = model(batch_input)
-        batch_decode = decoder(batch_output)
-        for img_id, out in zip(batch["id"], batch_decode):
-            if args.use_letters:
+        batch_decode = decoder(batch_output,args.print_char_segm)
+        if args.print_char_segm:
+            img_sizes = batch_input.sizes.tolist()
+            batch_segm = \
+                list(
+                    map(lambda x: [int(i*(x[1][1]-1)/x[0][-1]) for i in x[0]], 
+                    zip(decoder.seg,img_sizes))
+                )
+        for idx, (img_id, out) in enumerate(zip(batch["id"], batch_decode)):
+            if args.print_char_segm or args.print_word_segm:
                 out = [str(syms[val]) for val in out]
+                out = [
+                    [val, batch_segm[idx][i], 0, batch_segm[idx][i+1], img_sizes[idx][0]-1] 
+                    for i, val in enumerate(out)
+                ]
+                if args.print_word_segm:
+                    out2=[]
+                    cad=[]; ci=(0, 0)
+                    for l in out:
+                        if l[0]!=args.space:
+                            cad+=[l[0]]
+                        else: 
+                            if cad: out2.append([''.join(cad),ci[0],ci[1],l[1],l[4]])
+                            cad=[]; ci=(l[3],l[2])
+                    if cad: out2.append([''.join(cad),ci[0],ci[1],l[3],l[4]])
+                    out=out2
+            else:
+                if args.use_letters:
+                    out = [str(syms[val]) for val in out]
                 if args.space:
-                    out = [args.space if sym == "<space>" else sym for sym in out]
-            if args.join_str is not None:
-                out = args.join_str.join(str(x) for x in out)
+                    out = [' ' if sym == args.space else sym for sym in out]
+                if args.join_str is not None:
+                    out = args.join_str.join(str(x) for x in out)
             print(
                 "{}{}{}".format(img_id, args.separator, out)
                 if args.print_img_ids
