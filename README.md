@@ -32,7 +32,21 @@ The following Python scripts will be installed in your system:
   Recurrent Layers Really Necessary for Handwritten Text Recognition?"](https://ieeexplore.ieee.org/document/8269951) 
   (2017) by J. Puigcerver.
 - **pylaia-htr-decode-ctc**: Decode text line images using a trained model and
-  the CTC algorithm. It also outputs segmentatation boundaries of recognized chars/words.
+  the CTC algorithm. It also outputs segmentatation boundaries of recognized chars/words. For example, to obtain recognized hypothese along with corresponding word segmentation boundaries:
+  ```bash
+  pylaia-htr-decode-ctc \
+    --print_args True \
+    --train_path ./model \
+    --model_filename model \
+    --batch_size 24 \
+    --print_img_ids \
+    --use_letters \
+    --separator=" " \
+    --space "<space>" \
+    --print_word_segm \
+    --join_str " " \
+    symbols.txt Lines-Processed test.lst | less
+    ```
 - **pylaia-htr-train-ctc**: Train a model using the CTC algorithm and a set of
   text-line images and their transcripts.
 - **pylaia-htr-netout**: Dump the output of the model for a set of text-line images
