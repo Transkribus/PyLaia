@@ -1,4 +1,4 @@
-#!/home/ahector/SOFTWARE/RDNN-HTR-PY/bin/python3
+#!/usr/bin/env python
 from __future__ import absolute_import
 
 import argparse
@@ -142,7 +142,8 @@ if __name__ == "__main__":
                     out2=[]
                     cad=[]; ci=(0, 0)
                     for l in out:
-                        if l[0]!=args.space:
+                        #if l[0]!=args.space:
+                        if l[0]!="<space>":
                             cad+=[l[0]]
                         else: 
                             if cad: out2.append([''.join(cad),ci[0],ci[1],l[1],l[4]])
@@ -153,7 +154,8 @@ if __name__ == "__main__":
                 if args.use_letters:
                     out = [str(syms[val]) for val in out]
                 if args.space:
-                    out = [' ' if sym == args.space else sym for sym in out]
+                    #out = [' ' if sym == args.space else sym for sym in out]
+                    out = [args.space if sym == "<space>" else sym for sym in out]
                 if args.join_str is not None:
                     out = args.join_str.join(str(x) for x in out)
             print(

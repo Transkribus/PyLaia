@@ -3,6 +3,7 @@ from __future__ import absolute_import
 from functools import reduce
 
 from laia.losses.ctc_loss import transform_output
+import laia.common.logging as log
 
 
 class CTCGreedyDecoder(object):
@@ -15,9 +16,14 @@ class CTCGreedyDecoder(object):
         _, idx = x.max(dim=2)
         idx = idx.t().tolist()
         x = [idx_n[: int(xs[n])] for n, idx_n in enumerate(idx)]
+        #log.info(f"x = {x}")
+        #for x_n in x:
+        #    log.info(f"x_n = {x_n}")
+        #log.info(f"len(x) = {len(x)}")
         if getSeg:
             self._segm = [
                 [p for p, v in enumerate(x_n) if p==0 or (v!=x_n[p-1] and x_n[p-1]!=0)] + [len(x_n)-1]
+                #[p for p, v in enumerate(x_n)] + [len(x_n)-1]
                 for x_n in x
             ]
         # Remove repeated symbols
@@ -28,7 +34,7 @@ class CTCGreedyDecoder(object):
         # Remove CTC blank symbol
         self._output = [[x for x in x_n if x != 0] for x_n in x]
         if self._segm:
-            assert len(self._segm) == len(self._output)+1 or len(self._segm) == len(self._output)+2, ( 
+            assert len(self._segm) == len(self._output) or len(self._segm) == len(self._output)+1 or len(self._segm) == len(self._output)+2, ( 
                 "Number of char segmentations is not consistent"
                 "with the number of recognized chars"
             )
